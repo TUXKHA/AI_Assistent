@@ -132,6 +132,7 @@ if st.session_state.stage == "face":
 
                 st.success("Access Granted ✅")
                 st.session_state.stage = "nlp_unlock"
+                st.stop()
 
             elif label == "No Face":
                 color = (0, 0, 255)
@@ -161,7 +162,7 @@ if st.session_state.stage == "nlp_unlock":
 
     if st.button("👉 Enter AI Assistant (NLP)"):
         st.session_state.stage = "nlp"
-
+        st.stop()
 
 # =========================
 # STEP 3: NLP MODE ONLY AFTER UNLOCK
