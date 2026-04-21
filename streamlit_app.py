@@ -82,7 +82,7 @@ def predict_intent(text):
     label = classes[np.argmax(prob)]
     conf = np.max(prob)
 
-    if conf < 0.5:
+    if conf < 0.90:
         return "UNKNOWN", conf
 
     return label, conf
