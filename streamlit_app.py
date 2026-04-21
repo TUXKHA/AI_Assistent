@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import joblib
 import torch
-import time
 
 from facenet_pytorch import InceptionResnetV1, MTCNN
 
@@ -17,7 +16,7 @@ st.set_page_config(page_title="AI Assistant", layout="centered")
 st.title("Welcome To Virtual Assistant")
 
 # =========================
-# SESSION STATE (FLOW CONTROL)
+# SESSION STATE
 # =========================
 if "stage" not in st.session_state:
     st.session_state.stage = "face"
@@ -29,28 +28,6 @@ if "face_status" not in st.session_state:
     st.session_state.face_status = "stopped"
 
 # =========================
-# BUTTON STYLE (GREEN / RED)
-# =========================
-st.markdown("""
-<style>
-div.stButton > button {
-    font-weight: bold;
-    color: white;
-}
-
-/* START (running) */
-.running button {
-    background-color: #dc3545 !important;
-}
-
-/* STOP (stopped) */
-.stopped button {
-    background-color: #28a745 !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =========================
 # LOAD NLP MODELS
 # =========================
 intent_model = joblib.load("intent_model/model.pkl")
@@ -58,7 +35,7 @@ vectorizer = joblib.load("intent_model/vectorizer.pkl")
 classes = joblib.load("intent_model/classes.pkl")
 
 # =========================
-# LOAD FACENET + SVM
+# LOAD FACE MODELS
 # =========================
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -69,7 +46,7 @@ clf = joblib.load("face_svm.pkl")
 le = joblib.load("label_encoder.pkl")
 
 # =========================
-# FACE EMBEDDING FUNCTION
+# FACE EMBEDDING
 # =========================
 def get_embedding(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -122,39 +99,44 @@ def predict_intent(text):
 
 
 # =========================
-# STEP 1: FACE LOGIN ONLY
+# STEP 1: FACE LOGIN
 # =========================
 if st.session_state.stage == "face":
 
     st.subheader("📷 Face Recognition (Login Required)")
 
-    # STATUS DISPLAY
+    # STATUS
     if st.session_state.face_status == "running":
-        st.success("Face Recognition Running 🔴")
+        st.success("Face Recognition: RUNNING 🟢")
     else:
-        st.success("Face Recognition Stopped 🟢")
+        st.success("Face Recognition: STOPPED 🔴")
 
     col1, col2 = st.columns(2)
 
+    # =========================
+    # START BUTTON (GREEN WHEN ACTIVE)
+    # =========================
     with col1:
-        if st.button("Start Face Recognition"):
+        start_type = "primary" if st.session_state.face_status == "running" else "secondary"
+
+        if st.button("▶ Start Face Recognition", type=start_type):
             st.session_state.run = True
             st.session_state.face_status = "running"
+            st.rerun()
 
+    # =========================
+    # STOP BUTTON (GREEN WHEN ACTIVE)
+    # =========================
     with col2:
-        if st.button("Stop Face Recognition"):
+        stop_type = "primary" if st.session_state.face_status == "stopped" else "secondary"
+
+        if st.button("⛔ Stop Face Recognition", type=stop_type):
             st.session_state.run = False
             st.session_state.face_status = "stopped"
+            st.rerun()
 
-    # WRAP FOR COLOR EFFECT
-    if st.session_state.face_status == "running":
-        st.markdown('<div class="running">', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="stopped">', unsafe_allow_html=True)
-
+    # CAMERA INPUT
     img_file = st.camera_input("Take Snapshot")
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.run and img_file is not None:
 
@@ -166,28 +148,23 @@ if st.session_state.stage == "face":
             label, prob = predict_face(frame)
 
             if label == "ME":
-                color = (0, 255, 0)
-                text = f"ME ({prob:.2f})"
-
                 st.success("Access Granted ✅")
                 st.session_state.stage = "nlp_unlock"
                 st.session_state.run = False
+                st.rerun()
 
             elif label == "No Face":
-                color = (0, 0, 255)
                 text = "No Face Detected"
+                color = (0, 0, 255)
 
             else:
-                color = (0, 0, 255)
                 text = f"{label} ({prob:.2f})"
+                color = (0, 0, 255)
 
             cv2.putText(frame, text, (30, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
             st.image(frame, channels="BGR")
-
-        else:
-            st.warning("⚠️ Failed to read image")
 
 
 # =========================
@@ -200,6 +177,7 @@ if st.session_state.stage == "nlp_unlock":
 
     if st.button("Enter AI Assistant (NLP)"):
         st.session_state.stage = "nlp"
+        st.rerun()
 
 
 # =========================
