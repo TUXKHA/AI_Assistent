@@ -14,7 +14,7 @@ from facenet_pytorch import InceptionResnetV1, MTCNN
 # PAGE SETUP
 # =========================
 st.set_page_config(page_title="AI Assistant", layout="centered")
-st.title("🧠 AI Assistant (Face + NLP)")
+st.title("Welcome To Virtual Assistant")
 
 # =========================
 # SESSION STATE (FLOW CONTROL)
@@ -106,11 +106,11 @@ if st.session_state.stage == "face":
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("▶ Start Camera"):
+        if st.button("Start Face Recognition"):
             st.session_state.run = True
 
     with col2:
-        if st.button("⛔ Stop Camera"):
+        if st.button("Stop Face Recognition"):
             st.session_state.run = False
 
     img_file = st.camera_input("Take Snapshot")
@@ -126,7 +126,7 @@ if st.session_state.stage == "face":
 
             if label == "ME":
                 color = (0, 255, 0)
-                text = f"🟢 ME ({prob:.2f})"
+                text = f" ME ({prob:.2f})"
 
                 st.success("Access Granted ✅")
                 st.session_state.stage = "nlp_unlock"
@@ -139,7 +139,7 @@ if st.session_state.stage == "face":
 
             else:
                 color = (0, 0, 255)
-                text = f"🔴 {label} ({prob:.2f})"
+                text = f" {label} ({prob:.2f})"
 
             cv2.putText(frame, text, (30, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
@@ -155,11 +155,11 @@ if st.session_state.stage == "face":
 # =========================
 if st.session_state.stage == "nlp_unlock":
 
-    st.subheader("🔓 Access Granted")
+    st.subheader(" Access Granted")
 
     st.success("You are verified as ME")
 
-    if st.button("👉 Enter AI Assistant (NLP)"):
+    if st.button(" Enter AI Assistant (NLP)"):
 
         st.session_state.stage = "nlp"
         st.rerun()
@@ -170,7 +170,7 @@ if st.session_state.stage == "nlp_unlock":
 # =========================
 if st.session_state.stage == "nlp":
 
-    st.subheader("🎤 Intent Detection System")
+    st.subheader(" Intent Detection System")
 
     text = st.text_input("Enter command")
 
