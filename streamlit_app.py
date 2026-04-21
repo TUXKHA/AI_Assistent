@@ -97,9 +97,7 @@ def predict_intent(text):
 
 
 # =========================
-# =========================
 # STEP 1: FACE LOGIN ONLY
-# =========================
 # =========================
 if st.session_state.stage == "face":
 
@@ -132,7 +130,8 @@ if st.session_state.stage == "face":
 
                 st.success("Access Granted ✅")
                 st.session_state.stage = "nlp_unlock"
-                st.stop()
+                st.session_state.run = False
+                st.rerun()
 
             elif label == "No Face":
                 color = (0, 0, 255)
@@ -161,8 +160,10 @@ if st.session_state.stage == "nlp_unlock":
     st.success("You are verified as ME")
 
     if st.button("👉 Enter AI Assistant (NLP)"):
+
         st.session_state.stage = "nlp"
-        st.stop()
+        st.rerun()
+
 
 # =========================
 # STEP 3: NLP MODE ONLY AFTER UNLOCK
