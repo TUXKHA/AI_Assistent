@@ -17,6 +17,15 @@ st.set_page_config(page_title="AI Assistant", layout="centered")
 st.title("🧠 AI Assistant (Face + NLP)")
 
 # =========================
+# SESSION STATE (FLOW CONTROL)
+# =========================
+if "stage" not in st.session_state:
+    st.session_state.stage = "face"
+
+if "run" not in st.session_state:
+    st.session_state.run = False
+
+# =========================
 # LOAD NLP MODELS
 # =========================
 intent_model = joblib.load("intent_model/model.pkl")
@@ -66,7 +75,6 @@ def predict_face(img):
 
     label = le.inverse_transform([pred])[0]
 
-    # Safety threshold
     if prob < 0.95:
         return "Unknown", prob
 
@@ -87,52 +95,26 @@ def predict_intent(text):
 
     return label, conf
 
-# =========================
-# MENU
-# =========================
-menu = st.sidebar.radio("Choose Mode", ["Live Face Detection", "NLP Intent"])
 
 # =========================
-# NLP MODE
 # =========================
-if menu == "NLP Intent":
-
-    st.subheader("🎤 Intent Detection System")
-
-    text = st.text_input("Enter command")
-
-    if text:
-        intent, conf = predict_intent(text)
-
-        st.write("### Result")
-        st.write("📝 Text:", text)
-        st.write("🧠 Intent:", intent)
-        st.write("📊 Confidence:", round(conf, 2))
-
+# STEP 1: FACE LOGIN ONLY
 # =========================
-# FACE MODE (STABLE SNAPSHOT MODE)
 # =========================
-if menu == "Live Face Detection":
+if st.session_state.stage == "face":
 
-    st.subheader("📷 Face Recognition (FaceNet + SVM)")
-
-    # STATE CONTROL
-    if "run" not in st.session_state:
-        st.session_state.run = False
+    st.subheader("📷 Face Recognition (Login Required)")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("▶ Start"):
+        if st.button("▶ Start Camera"):
             st.session_state.run = True
 
     with col2:
-        if st.button("⛔ Stop"):
+        if st.button("⛔ Stop Camera"):
             st.session_state.run = False
 
-    frame_box = st.image([])
-
-    # CAMERA INPUT (SNAPSHOT BASED - STABLE)
     img_file = st.camera_input("Take Snapshot")
 
     if st.session_state.run and img_file is not None:
@@ -144,10 +126,12 @@ if menu == "Live Face Detection":
 
             label, prob = predict_face(frame)
 
-            # DISPLAY LOGIC
             if label == "ME":
                 color = (0, 255, 0)
                 text = f"🟢 ME ({prob:.2f})"
+
+                st.success("Access Granted ✅")
+                st.session_state.stage = "nlp_unlock"
 
             elif label == "No Face":
                 color = (0, 0, 255)
@@ -160,7 +144,38 @@ if menu == "Live Face Detection":
             cv2.putText(frame, text, (30, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
-            frame_box.image(frame, channels="BGR")
+            st.image(frame, channels="BGR")
 
         else:
             st.warning("⚠️ Failed to read image")
+
+
+# =========================
+# STEP 2: UNLOCK SCREEN
+# =========================
+if st.session_state.stage == "nlp_unlock":
+
+    st.subheader("🔓 Access Granted")
+
+    st.success("You are verified as ME")
+
+    if st.button("👉 Enter AI Assistant (NLP)"):
+        st.session_state.stage = "nlp"
+
+
+# =========================
+# STEP 3: NLP MODE ONLY AFTER UNLOCK
+# =========================
+if st.session_state.stage == "nlp":
+
+    st.subheader("🎤 Intent Detection System")
+
+    text = st.text_input("Enter command")
+
+    if text:
+        intent, conf = predict_intent(text)
+
+        st.write("### Result")
+        st.write("📝 Text:", text)
+        st.write("🧠 Intent:", intent)
+        st.write("📊 Confidence:", round(conf, 2))
