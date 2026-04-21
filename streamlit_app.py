@@ -25,6 +25,31 @@ if "stage" not in st.session_state:
 if "run" not in st.session_state:
     st.session_state.run = False
 
+if "face_status" not in st.session_state:
+    st.session_state.face_status = "stopped"
+
+# =========================
+# BUTTON STYLE (GREEN / RED)
+# =========================
+st.markdown("""
+<style>
+div.stButton > button {
+    font-weight: bold;
+    color: white;
+}
+
+/* START (running) */
+.running button {
+    background-color: #dc3545 !important;
+}
+
+/* STOP (stopped) */
+.stopped button {
+    background-color: #28a745 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # =========================
 # LOAD NLP MODELS
 # =========================
@@ -103,17 +128,33 @@ if st.session_state.stage == "face":
 
     st.subheader("📷 Face Recognition (Login Required)")
 
+    # STATUS DISPLAY
+    if st.session_state.face_status == "running":
+        st.success("Face Recognition Running 🔴")
+    else:
+        st.success("Face Recognition Stopped 🟢")
+
     col1, col2 = st.columns(2)
 
     with col1:
         if st.button("Start Face Recognition"):
             st.session_state.run = True
+            st.session_state.face_status = "running"
 
     with col2:
         if st.button("Stop Face Recognition"):
             st.session_state.run = False
+            st.session_state.face_status = "stopped"
+
+    # WRAP FOR COLOR EFFECT
+    if st.session_state.face_status == "running":
+        st.markdown('<div class="running">', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="stopped">', unsafe_allow_html=True)
 
     img_file = st.camera_input("Take Snapshot")
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.run and img_file is not None:
 
@@ -126,12 +167,11 @@ if st.session_state.stage == "face":
 
             if label == "ME":
                 color = (0, 255, 0)
-                text = f" ME ({prob:.2f})"
+                text = f"ME ({prob:.2f})"
 
                 st.success("Access Granted ✅")
                 st.session_state.stage = "nlp_unlock"
                 st.session_state.run = False
-                st.rerun()
 
             elif label == "No Face":
                 color = (0, 0, 255)
@@ -139,7 +179,7 @@ if st.session_state.stage == "face":
 
             else:
                 color = (0, 0, 255)
-                text = f" {label} ({prob:.2f})"
+                text = f"{label} ({prob:.2f})"
 
             cv2.putText(frame, text, (30, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
@@ -155,22 +195,19 @@ if st.session_state.stage == "face":
 # =========================
 if st.session_state.stage == "nlp_unlock":
 
-    st.subheader(" Access Granted")
-
+    st.subheader("🔓 Access Granted")
     st.success("You are verified as ME")
 
-    if st.button(" Enter AI Assistant (NLP)"):
-
+    if st.button("Enter AI Assistant (NLP)"):
         st.session_state.stage = "nlp"
-        st.rerun()
 
 
 # =========================
-# STEP 3: NLP MODE ONLY AFTER UNLOCK
+# STEP 3: NLP MODE
 # =========================
 if st.session_state.stage == "nlp":
 
-    st.subheader(" Intent Detection System")
+    st.subheader("🧠 Intent Detection System")
 
     text = st.text_input("Enter command")
 
@@ -178,6 +215,6 @@ if st.session_state.stage == "nlp":
         intent, conf = predict_intent(text)
 
         st.write("### Result")
-        st.write("📝 Text:", text)
-        st.write("🧠 Intent:", intent)
-        st.write("📊 Confidence:", round(conf, 2))
+        st.write("Text:", text)
+        st.write("Intent:", intent)
+        st.write("Confidence:", round(conf, 2))
