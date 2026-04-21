@@ -67,7 +67,7 @@ def predict_face(img):
     label = le.inverse_transform([pred])[0]
 
     # Safety threshold
-    if prob < 0.7:
+    if prob < 0.95:
         return "Unknown", prob
 
     return label, prob
